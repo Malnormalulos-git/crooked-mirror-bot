@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=config.bot_token.get_secret_value())
 
 dp = Dispatcher()
+dp.update.outer_middleware(AccessMiddleware())
 
 
 @dp.message(Command("start"))
@@ -19,9 +20,6 @@ async def cmd_start(message: types.Message):
 
 
 async def main():
-    dp.message.middleware(AccessMiddleware())
-    dp.callback_query.middleware(AccessMiddleware())
-
     await dp.start_polling(bot)
 
 
