@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 
 from config_reader import config
+from src.middlewares.access_middleware import AccessMiddleware
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,6 +19,9 @@ async def cmd_start(message: types.Message):
 
 
 async def main():
+    dp.message.middleware(AccessMiddleware())
+    dp.callback_query.middleware(AccessMiddleware())
+
     await dp.start_polling(bot)
 
 
