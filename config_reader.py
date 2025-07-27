@@ -6,6 +6,8 @@ from pathlib import Path
 class Config(BaseSettings):
     bot_token: SecretStr
     admin_id: int
+    twitter_auth_token: str
+    twitter_ct0: str
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent / '.env'
