@@ -1,19 +1,14 @@
 import logging
-from aiogram import types, Router, Bot
+from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.utils.media_group import MediaGroupBuilder
 
 from src.tweet import Tweet, MediaType
 
-router = Router()
+tweet_router = Router()
 
 
-@router.message(Command("start"))
-async def cmd_start(message: types.Message):
-    await message.answer("Hello!")
-
-
-@router.message(Command("tweet"))
+@tweet_router.message(Command("tweet"))
 async def cmd_tweet(message: types.Message):
     try:
         url = message.text
