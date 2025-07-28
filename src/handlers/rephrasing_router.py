@@ -3,6 +3,7 @@ import re
 from aiogram import types, Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
+from aiogram.utils.formatting import Text, Bold
 from aiogram.utils.media_group import MediaGroupBuilder
 
 from config_reader import config
@@ -15,13 +16,13 @@ rephrasing_router = Router()
 
 @rephrasing_router.message(F.text == "🔄 Rephrase tweet 🐦")
 async def handle_rephrase_tweet_message(message: Message, state: FSMContext) -> None:
-    await message.answer("Sure, please give me link to tweet or id!")
+    await message.answer("🔎 Sure, please give me link to tweet or id!")
     await state.set_state(TweetRephrasing.waiting_for_tweet_link_or_id)
 
 
 @rephrasing_router.callback_query(F.data == 'rephrase_tweet')
 async def handle_rephrase_tweet_callback(callback: types.CallbackQuery, state: FSMContext) -> None:
-    await callback.message.answer("Sure, please give me link to tweet or id!")
+    await callback.message.answer("🔎 Sure, please give me link to tweet or id!")
     await state.set_state(TweetRephrasing.waiting_for_tweet_link_or_id)
     await callback.answer()
 
@@ -35,7 +36,7 @@ async def process_waiting_for_tweet_link_or_id(message: Message, state: FSMConte
     if match:
         tweet_id = match.group(1)
 
-        await message.answer("I see! Fetching tweet...")
+        await message.answer("✅ I see! Fetching tweet...")
 
         tweet = await Tweet.create(tweet_id)
 
@@ -43,7 +44,7 @@ async def process_waiting_for_tweet_link_or_id(message: Message, state: FSMConte
             await state.update_data(post_text=tweet.text)
             await state.update_data(post_media=tweet.media)
 
-            caption = tweet.__repr__()
+            caption = Text(tweet.__repr__())
 
             if len(tweet.media) > 0:
                 media_group = MediaGroupBuilder()
@@ -55,13 +56,13 @@ async def process_waiting_for_tweet_link_or_id(message: Message, state: FSMConte
 
                 await message.answer_media_group(media=media_group.build())
 
-            await message.answer(caption, reply_markup=tweet_preview_kb)
+            await message.answer(**caption.as_kwargs(), reply_markup=tweet_preview_kb)
         else:
             await message.answer("❌ Could not extract tweet information. Maybe id is invalid")
 
         return
 
-    await message.reply("I think your input is invalid. Try again")
+    await message.reply("❌ I think your input is invalid. Try again")
 
 
 @rephrasing_router.callback_query(F.data == 'public_post')
@@ -71,10 +72,12 @@ async def handle_public_post_callback(callback: types.CallbackQuery, state: FSMC
     post_text = data["post_text"]
     post_media = data["post_media"]
 
+    caption = Text(post_text)
+
     if len(post_media) > 0:
         media_group = MediaGroupBuilder()
         for i, media in enumerate(post_media):
-            media_caption = post_text if i == 0 else None
+            media_caption = caption.as_markdown() if i == 0 else None
 
             if media.type == MediaType.IMAGE:
                 media_group.add_photo(media=media.url, caption=media_caption)
@@ -82,9 +85,9 @@ async def handle_public_post_callback(callback: types.CallbackQuery, state: FSMC
                 media_group.add_video(media=media.url, caption=media_caption)
         await bot.send_media_group(config.channel_id, media=media_group.build())
     else:
-        await bot.send_message(config.channel_id, post_text)
+        await bot.send_message(config.channel_id, **caption.as_kwargs(),)
 
-    await callback.message.answer("Post has been published!")
+    await callback.message.answer("✅ Post has been published!")
     # await state.set_state(TweetRephrasing.waiting_for_tweet_link_or_id)
     await callback.answer()
 

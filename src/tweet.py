@@ -24,7 +24,7 @@ class Tweet:
     __executor = ThreadPoolExecutor(max_workers=4)
 
     @staticmethod
-    def __get_scraper():
+    def __get_scraper() -> Scraper:
         if Tweet.__scraper is None:
             cookies = {
                 "ct0": config.twitter_ct0,
@@ -34,7 +34,7 @@ class Tweet:
 
         return Tweet.__scraper
 
-    def __get_tweet_data(self, tweet_id: str):
+    def __get_tweet_data(self, tweet_id: str) -> list[dict]:
         """Synchronous function to run in thread pool"""
         scraper = self.__get_scraper()
 
@@ -42,7 +42,7 @@ class Tweet:
 
         return meta_data
 
-    def __init__(self, tweet_id: str):
+    def __init__(self, tweet_id: str) -> None:
         self.id = tweet_id
         self.ok = False
         self.text = None
@@ -51,7 +51,7 @@ class Tweet:
         self.stats = None
         self.media = None
 
-    async def load_data(self):
+    async def load_data(self) -> bool:
         """Async method for loading tweets data"""
         try:
             loop = asyncio.get_event_loop()
@@ -124,7 +124,7 @@ class Tweet:
             return False
 
     @classmethod
-    async def create(cls, tweet_id: str):
+    async def create(cls, tweet_id: str) -> 'Tweet':
         """Async class method for creation and initialization of object"""
         tweet = cls(tweet_id)
         await tweet.load_data()
@@ -136,7 +136,7 @@ class Tweet:
 Author: {self.author}
 Date: {self.created_at}
 
-Text: {self.text}
+Text:\n{self.text}
 
 Stats:
 {self.stats['likes']:,} likes
