@@ -8,6 +8,7 @@ class Config(BaseSettings):
     admin_id: int
     twitter_auth_token: str
     twitter_ct0: str
+    channel_id: str
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent / '.env'
