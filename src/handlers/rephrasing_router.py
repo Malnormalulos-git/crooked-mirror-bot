@@ -3,13 +3,13 @@ import re
 from aiogram import types, Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from aiogram.utils.formatting import Text, Bold
-from aiogram.utils.media_group import MediaGroupBuilder
+from aiogram.utils.formatting import Text, Pre
 
 from config_reader import config
 from src.final_state_machines.tweet_rephrasing import TweetRephrasing
-from src.keyboards.keyboards import tweet_preview_kb
-from src.tweet import Tweet, MediaType
+from src.keyboards.keyboards import tweet_preview_kb, post_preview_kb
+from src.tweet import Tweet
+from src.utills.assemble_media_group import assemble_media_group
 
 rephrasing_router = Router()
 
@@ -47,16 +47,11 @@ async def process_waiting_for_tweet_link_or_id(message: Message, state: FSMConte
             caption = Text(tweet.__repr__())
 
             if len(tweet.media) > 0:
-                media_group = MediaGroupBuilder()
-                for i, media in enumerate(tweet.media):
-                    if media.type == MediaType.IMAGE:
-                        media_group.add_photo(media=media.url)
-                    elif media.type == MediaType.VIDEO:
-                        media_group.add_video(media=media.url)
+                media_group = assemble_media_group(tweet.media)
 
-                await message.answer_media_group(media=media_group.build())
+                await message.answer_media_group(media=media_group)
 
-            await message.answer(**caption.as_kwargs(), reply_markup=tweet_preview_kb)
+            await message.answer(text=caption.as_html(), reply_markup=tweet_preview_kb)
         else:
             await message.answer("❌ Could not extract tweet information. Maybe id is invalid")
 
@@ -75,26 +70,47 @@ async def handle_public_post_callback(callback: types.CallbackQuery, state: FSMC
     caption = Text(post_text)
 
     if len(post_media) > 0:
-        media_group = MediaGroupBuilder()
-        for i, media in enumerate(post_media):
-            media_caption = caption.as_markdown() if i == 0 else None
-
-            if media.type == MediaType.IMAGE:
-                media_group.add_photo(media=media.url, caption=media_caption)
-            elif media.type == MediaType.VIDEO:
-                media_group.add_video(media=media.url, caption=media_caption)
-        await bot.send_media_group(config.channel_id, media=media_group.build())
+        media_group = assemble_media_group(post_media, caption)
+        await bot.send_media_group(config.channel_id, media=media_group)
     else:
-        await bot.send_message(config.channel_id, **caption.as_kwargs(),)
+        await bot.send_message(config.channel_id, text=caption.as_html(), parse_mode='HTML')
 
     await callback.message.answer("✅ Post has been published!")
-    # await state.set_state(TweetRephrasing.waiting_for_tweet_link_or_id)
     await callback.answer()
 
 
 @rephrasing_router.callback_query(F.data == 'edit_post_manually')
 async def handle_edit_post_manually_callback(callback: types.CallbackQuery, state: FSMContext) -> None:
-    pass
+    data = await state.get_data()
+
+    post_text = data["post_text"]
+
+    caption = Text(Pre(post_text))
+
+    await callback.message.answer("Waiting for your variant of the text: ")
+    await callback.message.answer(text=caption.as_html())
+
+    await state.set_state(TweetRephrasing.waiting_edit_manually)
+
+    await callback.answer()
+
+
+@rephrasing_router.message(TweetRephrasing.waiting_edit_manually)
+async def process_waiting_edit_manually(message: Message, state: FSMContext) -> None:
+    new_post_text = message.html_text  # with markup
+
+    data = await state.update_data(post_text=new_post_text)
+    post_media = data["post_media"]
+
+    await message.answer("This how your post looks like: ")
+
+    caption = Text(new_post_text)
+
+    if len(post_media) > 0:
+        media_group = assemble_media_group(post_media)
+        await message.answer_media_group(media=media_group)
+
+    await message.answer(text=caption.as_html(), reply_markup=post_preview_kb)
 
 
 @rephrasing_router.callback_query(F.data == 'rephrase_with_llm')
