@@ -21,3 +21,8 @@ async def cmd_start(message: types.Message) -> None:
 async def help_btn_handler(message: types.Message) -> None:
     text = "With this bot you can rephrase tweet and public at the chanel!"
     await message.reply(text, reply_markup=help_kb)
+
+
+# @common_router.startup()
+# async def startup() -> None:
+#

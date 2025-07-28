@@ -6,10 +6,10 @@ from aiogram.types import Message
 from aiogram.utils.formatting import Text, Pre
 
 from config_reader import config
-from src.final_state_machines.tweet_rephrasing import TweetRephrasing
+from src.states.tweet_rephrasing import TweetRephrasing
 from src.keyboards.keyboards import tweet_preview_kb, post_preview_kb
 from src.tweet import Tweet
-from src.utills.assemble_media_group import assemble_media_group
+from src.utils.assemble_media_group import assemble_media_group
 
 rephrasing_router = Router()
 
@@ -97,7 +97,7 @@ async def handle_edit_post_manually_callback(callback: types.CallbackQuery, stat
 
 @rephrasing_router.message(TweetRephrasing.waiting_edit_manually)
 async def process_waiting_edit_manually(message: Message, state: FSMContext) -> None:
-    new_post_text = message.html_text  # with markup
+    new_post_text = message.text
 
     data = await state.update_data(post_text=new_post_text)
     post_media = data["post_media"]
