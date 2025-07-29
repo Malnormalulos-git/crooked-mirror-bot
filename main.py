@@ -11,6 +11,7 @@ from config_reader import config
 from src.handlers.common_router import common_router
 from src.handlers.rephrasing_router import rephrasing_router
 from src.middlewares.access_middleware import AccessMiddleware
+from src.middlewares.dependency_injection_middleware import DependencyInjectionMiddleware
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,6 +27,7 @@ async def main():
     dp = Dispatcher(storage=MemoryStorage())
 
     dp.update.outer_middleware(AccessMiddleware())
+    dp.update.outer_middleware(DependencyInjectionMiddleware())
 
     dp.include_router(common_router)
     dp.include_router(rephrasing_router)

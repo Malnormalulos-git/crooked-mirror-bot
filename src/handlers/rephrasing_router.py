@@ -6,6 +6,7 @@ from aiogram.types import Message
 from aiogram.utils.formatting import Text, Pre
 
 from config_reader import config
+from src.services.gen_ai.gen_ai import GenAI
 from src.states.tweet_rephrasing import TweetRephrasing
 from src.keyboards.keyboards import tweet_preview_kb, post_preview_kb
 from src.tweet import Tweet
@@ -114,5 +115,13 @@ async def process_waiting_edit_manually(message: Message, state: FSMContext) -> 
 
 
 @rephrasing_router.callback_query(F.data == 'rephrase_with_llm')
-async def handle_rephrase_with_llm_callback(callback: types.CallbackQuery, state: FSMContext) -> None:
-    pass
+async def handle_rephrase_with_llm_callback(callback: types.CallbackQuery, state: FSMContext, gen_ai_service: GenAI) -> None:
+    data = await state.get_data()
+    post_text = data["post_text"]
+
+    await callback.message.answer('Rephrasing your text...')
+    await callback.answer()
+
+    result = gen_ai_service.rephrase_post(post_text)
+
+    await callback.message.answer(result if result else "❌ Something went wrong")
