@@ -7,14 +7,14 @@ from src.services.gen_ai.gen_ai import GenAI
 
 
 class GeminiGenAI(GenAI):
-    _client: genai.Client | None
+    __client: genai.Client | None = None
 
-    @classmethod
-    def _get_client(cls) -> genai.Client:
+    @staticmethod
+    def __get_client() -> genai.Client:
         """Get or create Gemini client instance"""
-        if cls._client is None:
-            cls._client = genai.Client(api_key=config.llm_api_key)
-        return cls._client
+        if GeminiGenAI.__client is None:
+            GeminiGenAI.__client = genai.Client(api_key=config.llm_api_key)
+        return GeminiGenAI.__client
 
     def rephrase_post(self, text: str, additional_instructions: str | None = None) -> str:
         if not text.strip():
@@ -22,7 +22,7 @@ class GeminiGenAI(GenAI):
             return ""
 
         try:
-            client = self._get_client()
+            client = GeminiGenAI.__get_client()
 
             prompt = config.text_rephrasing_prompt.format(additional_instructions, text)
 
