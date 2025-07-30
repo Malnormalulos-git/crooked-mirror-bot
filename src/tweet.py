@@ -133,17 +133,18 @@ class Tweet:
     def __repr__(self):
         if self.ok:
             return f"""
-Author: {self.author}
-Date: {self.created_at}
+👤 Author: {self.author}
+📅 Date: {self.created_at}
 
-Text:\n{self.text}
+📝 Text:\n{self.text}
 
-Stats:
-{self.stats['likes']:,} likes
-{self.stats['retweets']:,} retweets  
-{self.stats['replies']:,} replies
-{self.stats['views']} views
+📊 Stats:
+❤️ {self.stats['likes']:,} likes
+🔄 {self.stats['retweets']:,} retweets  
+💬 {self.stats['replies']:,} replies
+👁️ {self.stats['views']} views
 
-Tweet ID: {self.id}
+🆔 Tweet ID: {self.id}
+🖼️ Media items: {len(self.media)}
 """
         return f"❌ Could not extract tweet ({self.id}) information"
