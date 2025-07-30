@@ -11,6 +11,7 @@ from src.states.tweet_rephrasing import TweetRephrasing
 from src.keyboards.keyboards import tweet_preview_kb, post_preview_kb
 from src.tweet import Tweet
 from src.utils.assemble_media_group import assemble_media_group
+from src.utils.show_post_preview import show_post_preview
 
 rephrasing_router = Router()
 
@@ -105,13 +106,7 @@ async def process_waiting_edit_manually(message: Message, state: FSMContext) -> 
 
     await message.answer("This how your post looks like: ")
 
-    caption = Text(new_post_text)
-
-    if len(post_media) > 0:
-        media_group = assemble_media_group(post_media)
-        await message.answer_media_group(media=media_group)
-
-    await message.answer(text=caption.as_html(), reply_markup=post_preview_kb)
+    await show_post_preview(message, new_post_text, post_media)
 
 
 @rephrasing_router.callback_query(F.data == 'rephrase_with_llm')
