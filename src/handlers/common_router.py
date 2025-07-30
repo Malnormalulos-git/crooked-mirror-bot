@@ -1,7 +1,10 @@
-from aiogram import Router, types, F
+import logging
+from aiogram import Router, types, F, Bot
+from aiogram.enums import ChatMemberStatus
 from aiogram.filters import Command
 from aiogram.utils.formatting import Text, Bold
 
+from config_reader import config
 from src.keyboards.keyboards import main_kb, help_kb
 
 common_router = Router()
@@ -23,6 +26,19 @@ async def help_btn_handler(message: types.Message) -> None:
     await message.reply(text, reply_markup=help_kb)
 
 
-# @common_router.startup()
-# async def startup() -> None:
-#
+@common_router.startup()
+async def startup(bot: Bot) -> None:
+    try:
+        chat_member = await bot.get_chat_member(chat_id=config.channel_id, user_id=bot.id)
+        is_admin = chat_member.status == ChatMemberStatus.ADMINISTRATOR
+        if is_admin:
+            logging.log(level=logging.INFO, msg="Bot is ready!")
+            return
+    except Exception as e:
+        print(f"Error checking bot admin status: {e}")
+        raise
+
+
+@common_router.shutdown()
+async def shutdown() -> None:
+    logging.log(level=logging.INFO, msg="Shutting down...")

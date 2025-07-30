@@ -32,8 +32,11 @@ async def main():
     dp.include_router(common_router)
     dp.include_router(rephrasing_router)
 
-    await bot(DeleteWebhook(drop_pending_updates=True))
-    await dp.start_polling(bot)
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
 
 if __name__ == "__main__":
