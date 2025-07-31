@@ -4,7 +4,7 @@ from aiogram.types import InputMediaAudio, InputMediaPhoto, InputMediaVideo, Inp
 from aiogram.utils.formatting import Text
 from aiogram.utils.media_group import MediaGroupBuilder
 
-from src.tweet import MediaItem, MediaType
+from src.services.social_platform_scraper.models import MediaType, MediaItem
 
 
 def assemble_media_group(media: set[MediaItem], caption: Text | None = None) -> list[

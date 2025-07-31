@@ -1,4 +1,3 @@
-import re
 import logging
 
 from aiogram import types, Router, F, Bot
@@ -8,63 +7,62 @@ from aiogram.utils.formatting import Text, Pre
 
 from config_reader import config
 from src.services.gen_ai.gen_ai import GenAI
-from src.states.tweet_rephrasing import TweetRephrasing
+from src.services.social_platform_scraper.social_platform_manager import SocialPlatformManager
+from src.states.rephrasing import Rephrasing
 from src.keyboards.keyboards import additional_instructions_kb
-from src.tweet import Tweet
 from src.utils.assemble_media_group import assemble_media_group
 from src.utils.show_post_preview import show_post_preview
 
 rephrasing_router = Router()
 
 
-@rephrasing_router.message(F.text == "🔄 Rephrase tweet 🐦")
-async def handle_rephrase_tweet_message(message: Message, state: FSMContext) -> None:
-    await message.answer("🔎 Sure, please give me link to tweet or id!")
-    await state.set_state(TweetRephrasing.waiting_for_tweet_link_or_id)
+@rephrasing_router.message(F.text == "🔄 Rephrase post 📜")
+async def handle_rephrase_post_message(message: Message, state: FSMContext) -> None:
+    await message.answer("🔎 Sure, please give me link/id of the post!")
+    await state.set_state(Rephrasing.waiting_for_link_or_id)
 
 
-@rephrasing_router.callback_query(F.data == 'rephrase_tweet')
-async def handle_rephrase_tweet_callback(callback: types.CallbackQuery, state: FSMContext) -> None:
-    await callback.message.answer("🔎 Sure, please give me link to tweet or id!")
-    await state.set_state(TweetRephrasing.waiting_for_tweet_link_or_id)
+@rephrasing_router.callback_query(F.data == 'rephrase_post')
+async def handle_rephrase_post_callback(callback: types.CallbackQuery, state: FSMContext) -> None:
+    await callback.message.answer("🔎 Sure, please give me link/id of the post!")
+    await state.set_state(Rephrasing.waiting_for_link_or_id)
     await callback.answer()
 
 
-@rephrasing_router.message(TweetRephrasing.waiting_for_tweet_link_or_id)
-async def process_waiting_for_tweet_link_or_id(message: Message, state: FSMContext) -> None:
-    link_or_id = message.text
+@rephrasing_router.message(Rephrasing.waiting_for_link_or_id)
+async def process_waiting_for_post_link_or_id(
+        message: Message,
+        state: FSMContext,
+        social_platform_manager: SocialPlatformManager
+) -> None:
+    url_or_id = message.text.strip()
 
-    pattern = r'(?:.*status/)?(\d+)'
-    match = re.search(pattern, link_or_id)
-    if not match:
-        await message.reply("❌ I think your input is invalid. Try again")
-        return
-
-    tweet_id = match.group(1)
-    await message.answer("✅ I see! Fetching tweet...")
+    await message.answer("✅ I see! Fetching post...")
 
     try:
-        tweet = await Tweet.create(tweet_id)
+        post = await social_platform_manager.get_post(url_or_id)
 
-        if not tweet.ok:
-            await message.answer("❌ Could not extract tweet information. Maybe id is invalid")
+        if not post:
+            await message.answer(
+                "❌ Could not extract post information. Maybe the link/id is invalid or platform is not supported.")
             return
 
         await state.update_data(
-            post_text=tweet.text,
-            original_tweet=tweet.text,
-            post_media=tweet.media
+            post_text=post.text,
+            original_post=post.text,
+            post_media=post.media,
+            platform=post.platform.value
         )
 
-        tweet_info = Text(tweet.__repr__())
-        await message.answer(text=tweet_info.as_html())
+        post_info = Text(social_platform_manager.format_post_info(post))
 
+        await message.answer(text=post_info.as_html())
         await message.answer("Current post is: ")
-        await show_post_preview(message, tweet.text, tweet.media, is_original=True)
+        await show_post_preview(message, post.text, post.media, is_original=True)
 
     except Exception as e:
-        await message.answer("❌ An error occurred while fetching the tweet. Please try again.")
-        logging.error(f"Error fetching tweet {tweet_id}: {e}")
+        await message.answer("❌ An error occurred while fetching the post. Please try again.")
+        logging.error(f"Error fetching post from {url_or_id}: {e}")
 
 
 @rephrasing_router.callback_query(F.data == 'public_post')
@@ -112,11 +110,11 @@ async def handle_edit_post_manually_callback(callback: types.CallbackQuery, stat
     await callback.message.answer("📝 Please send your new version of the text:")
     await callback.message.answer(text=caption.as_html())
 
-    await state.set_state(TweetRephrasing.waiting_edit_manually)
+    await state.set_state(Rephrasing.waiting_edit_manually)
     await callback.answer()
 
 
-@rephrasing_router.message(TweetRephrasing.waiting_edit_manually)
+@rephrasing_router.message(Rephrasing.waiting_edit_manually)
 async def process_waiting_edit_manually(message: Message, state: FSMContext) -> None:
     new_post_text = message.text.strip()
 
@@ -135,18 +133,18 @@ async def process_waiting_edit_manually(message: Message, state: FSMContext) -> 
 @rephrasing_router.callback_query(F.data == 'recover_original')
 async def handle_recover_original_callback(callback: types.CallbackQuery, state: FSMContext) -> None:
     data = await state.get_data()
-    original_tweet = data.get("original_tweet", "")
+    original_post = data.get("original_post", "")
 
-    if not original_tweet:
-        await callback.message.answer("❌ No original tweet found.")
+    if not original_post:
+        await callback.message.answer("❌ No original post found.")
         await callback.answer()
         return
 
-    await state.update_data(post_text=original_tweet)
+    await state.update_data(post_text=original_post)
     post_media = data.get("post_media", set())
 
     await callback.message.answer("✅ Restored to original text:")
-    await show_post_preview(callback, original_tweet, post_media, is_original=False)
+    await show_post_preview(callback, original_post, post_media, is_original=False)
     await callback.answer()
 
 
@@ -162,11 +160,11 @@ async def handle_rephrase_with_llm_callback(callback: types.CallbackQuery) -> No
 @rephrasing_router.callback_query(F.data == 'additional_instructions_yes')
 async def handle_additional_instructions_yes_callback(callback: types.CallbackQuery, state: FSMContext) -> None:
     await callback.message.answer("📝 Please provide your additional instructions:")
-    await state.set_state(TweetRephrasing.waiting_additional_instructions)
+    await state.set_state(Rephrasing.waiting_additional_instructions)
     await callback.answer()
 
 
-@rephrasing_router.message(TweetRephrasing.waiting_additional_instructions)
+@rephrasing_router.message(Rephrasing.waiting_additional_instructions)
 async def process_waiting_additional_instructions(message: Message, state: FSMContext, gen_ai_service: GenAI) -> None:
     additional_instructions = message.text.strip()
 

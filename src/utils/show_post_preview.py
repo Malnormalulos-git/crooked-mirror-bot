@@ -2,7 +2,7 @@ from aiogram import types
 from aiogram.types import Message
 from aiogram.utils.formatting import Text
 
-from src.keyboards.keyboards import tweet_preview_kb, post_preview_kb
+from src.keyboards.keyboards import original_post_preview_kb, post_preview_kb
 from src.utils.assemble_media_group import assemble_media_group
 
 
@@ -14,7 +14,7 @@ async def show_post_preview(message_or_callback: Message | types.CallbackQuery, 
         message = message_or_callback.message
 
     caption = Text(post_text)
-    keyboard = tweet_preview_kb if is_original else post_preview_kb
+    keyboard = original_post_preview_kb if is_original else post_preview_kb
 
     if len(post_media) > 0:
         media_group = assemble_media_group(post_media)
