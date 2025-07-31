@@ -24,11 +24,11 @@ A Telegram bot that fetches posts from social media platforms and rephrases them
    cp .env.example .env
    ```
    Edit `.env` with your credentials:
-   - `BOT_TOKEN`: Telegram bot token
-   - `ADMIN_ID`: Your Telegram user ID
+   - `BOT_TOKEN`: Telegram bot token (Create bot and get token here [@BotFather](https://t.me/BotFather))
+   - `ADMIN_ID`: Your Telegram user ID (You can gat it from [@JsonDumpCUBot](https://t.me/JsonDumpCUBot))
    - `TWITTER_AUTH_TOKEN` & `TWITTER_CT0`: Twitter cookies
-   - `LLM_API_KEY`: Google Gemini API key
-   - `CHANNEL_ID`: Target Telegram channel ID (Bot must be an admin)
+   - `LLM_API_KEY`: Google Gemini API key (You can get it from [Google AI Studio](https://aistudio.google.com/app/apikey))
+   - `CHANNEL_ID`: Target Telegram channel ID (You can get it from [@JsonDumpCUBot](https://t.me/JsonDumpCUBot)) (Bot must be an admin of the provided channel)
 
 3. **Run the bot**:
    ```bash
