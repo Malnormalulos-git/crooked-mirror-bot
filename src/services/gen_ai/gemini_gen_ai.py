@@ -1,6 +1,6 @@
 import logging
 
-from google import genai
+import google.genai as genai
 
 from config_reader import config
 from src.services.gen_ai.gen_ai import GenAI
