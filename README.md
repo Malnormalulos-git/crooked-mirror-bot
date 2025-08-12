@@ -39,12 +39,12 @@ A Telegram bot that fetches posts from social media platforms and rephrases them
 
 1. **Ensure you set up `.env` file.**
 
-2. In terminal run:
+2. **In terminal run**:
    ```bash
    docker build -t crooked-mirror-bot .
    ```
 
-3. And finally:
+3. **And finally**:
    ```bash
    docker run crooked-mirror-bot
    ```
